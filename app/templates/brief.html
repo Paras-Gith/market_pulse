@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A MarketPulse AI Deep Brief on Indian market news.">
+  <title>Deep Brief — {{ article.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+  <div class="page-shell brief-page">
+    <header class="masthead">
+      <p class="mast-date"><a href="/">← Front page</a></p>
+      <a class="brand" href="/">MarketPulse <span>AI</span></a>
+      <nav class="account-nav" aria-label="Account">
+        <span class="account-email">{{ user.email }}</span>
+        <form method="post" action="/logout"><button class="text-button" type="submit">Sign out</button></form>
+      </nav>
+    </header>
+    {% if flashes %}
+    <div class="toast-stack" aria-live="polite">
+      {% for flash in flashes %}<p class="toast toast-{{ flash.kind }}">{{ flash.message }}</p>{% endfor %}
+    </div>
+    {% endif %}
+    <main class="brief-content">
+      <p class="eyebrow">MarketPulse · Deep Brief</p>
+      <h1>{{ article.title }}</h1>
+      <p class="story-meta">{{ article.source }} · {{ article.published_at.strftime("%B %d, %Y %H:%M UTC") }}</p>
+      <p class="brief-source-summary">{{ article.summary }}</p>
+      <p class="brief-insight"><strong>Pulse insight · {{ article.sentiment|capitalize }}</strong><br>{{ article.insight }}</p>
+      {% if brief %}
+      <div class="brief-sections">
+        <section><h2>What happened</h2><p>{{ brief.what_happened }}</p></section>
+        <section><h2>Why it matters</h2><p>{{ brief.why_it_matters }}</p></section>
+        <section><h2>Who is affected</h2><p>{{ brief.who_is_affected }}</p></section>
+        <section><h2>What to watch next</h2><p>{{ brief.what_to_watch_next }}</p></section>
+      </div>
+      <p class="brief-disclaimer">Context, not investment advice. Verify important details with the original source.</p>
+      <button class="button button-outline no-print" type="button" onclick="window.print()">Print this brief</button>
+      {% else %}
+      <section class="brief-purchase">
+        <p class="eyebrow">One-time purchase</p>
+        <h2>Get the four-part context.</h2>
+        <p>Understand what happened, why it matters, who is affected, and what to watch next.</p>
+        <p class="plan-price">$1 <span>· one-time</span></p>
+        <form method="post" action="/brief/{{ article.id }}/purchase">
+          <button class="button button-paypal" type="submit">Pay $1 with PayPal</button>
+        </form>
+      </section>
+      {% endif %}
+    </main>
+    <footer class="site-footer"><span>MarketPulse AI · Independent market reading, not investment advice.</span></footer>
+  </div>
+</body>
+</html>

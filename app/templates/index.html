@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="AI-classified Indian stock-market news, clearly explained.">
+  <title>MarketPulse AI — Indian markets, in focus</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="masthead">
+      <p class="mast-date">{{ today }}</p>
+      <a class="brand" href="/">MarketPulse <span>AI</span></a>
+      <nav class="account-nav" aria-label="Account">
+        {% if user %}
+          <span class="account-email">{{ user.email }}</span>
+          {% if user.is_pro %}<span class="pro-label">PRO</span>{% endif %}
+          <form method="post" action="/logout"><button class="text-button" type="submit">Sign out</button></form>
+        {% else %}
+          <a href="/login">Sign in</a>
+          <a class="account-join" href="/signup">Join free</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <nav class="category-nav" aria-label="News categories">
+      <a class="category-link{% if selected_category == 'all' %} is-active{% endif %}" href="/" {% if selected_category == 'all' %}aria-current="page"{% endif %}>All</a>
+      <span class="category-separator" aria-hidden="true">/</span>
+      {% for category in categories %}
+        <a class="category-link{% if selected_category == category %} is-active{% endif %}" href="/?category={{ category|urlencode }}" {% if selected_category == category %}aria-current="page"{% endif %}>{{ category }}</a>
+        {% if not loop.last %}<span class="category-separator" aria-hidden="true">/</span>{% endif %}
+      {% endfor %}
+    </nav>
+
+    <main>
+      <section class="section-heading" aria-labelledby="front-page-title">
+        <div class="section-rule"><span></span></div>
+        <p class="eyebrow">The Indian market, made legible</p>
+        <h1 id="front-page-title">The MarketPulse</h1>
+        <p class="standfirst">The stories moving Indian markets, classified by AI and edited for your attention.</p>
+        <div class="section-rule section-rule-bottom"><span></span></div>
+      </section>
+
+      <section class="mood-row" aria-label="Market mood over the last 24 hours">
+        <span class="mood-label">Market mood · last 24 hours</span>
+        <div class="mood-track" role="img" aria-label="Market mood: {{ mood }}">
+          <span class="mood-fill mood-{{ mood }}" style="width: {{ mood_percent }}%"></span>
+        </div>
+        <strong class="mood-value">{{ mood|capitalize }}</strong>
+      </section>
+
+      {% if locked_articles %}
+      <section class="pro-strip" aria-labelledby="pro-strip-title">
+        <div class="strip-heading">
+          <div>
+            <p class="eyebrow">For readers who want the edge</p>
+            <h2 id="pro-strip-title">Just in, for Pro readers</h2>
+          </div>
+          <span class="locked-count">{{ locked_count }} {{ "story" if locked_count == 1 else "stories" }} on the wire</span>
+        </div>
+        <div class="locked-grid">
+          {% for item in locked_articles %}
+          <article class="locked-card" data-locked-card data-release="{{ item.release_at }}">
+            <span class="locked-kicker">PRO · EARLY ACCESS</span>
+            <p class="locked-title" aria-label="Story locked for free readers">A market story is developing</p>
+            <p class="locked-status">Free in <strong data-countdown>…</strong></p>
+          </article>
+          {% endfor %}
+        </div>
+        <form method="post" action="/subscribe"><button class="button button-paypal" type="submit">Subscribe with PayPal</button></form>
+      </section>
+      {% endif %}
+
+      <section class="paper-tools" aria-label="Filter stories">
+        <div class="sentiment-filters" role="group" aria-label="Filter by sentiment">
+          <button type="button" class="filter-chip is-selected" data-sentiment-filter="all" aria-pressed="true">All stories</button>
+          <button type="button" class="filter-chip" data-sentiment-filter="bullish" aria-pressed="false">▲ Bullish</button>
+          <button type="button" class="filter-chip" data-sentiment-filter="bearish" aria-pressed="false">▼ Bearish</button>
+          <button type="button" class="filter-chip" data-sentiment-filter="neutral" aria-pressed="false">• Neutral</button>
+        </div>
+        <label class="search-box">
+          <span class="visually-hidden">Search stories</span>
+          <input id="story-search" type="search" placeholder="Search the day's news" autocomplete="off">
+          <span aria-hidden="true">⌕</span>
+        </label>
+      </section>
+
+      <div id="loading-skeleton" class="loading-skeleton" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <p id="empty-state" class="empty-state" hidden>No stories match those filters. Try another search or sentiment.</p>
+
+      <div class="news-layout" id="news-layout">
+        <section class="news-feed" aria-labelledby="latest-title">
+          <h2 class="column-heading" id="latest-title">Latest</h2>
+          <div class="story-grid">
+          {% if lead_article %}
+          <article class="lead-story story-item" data-sentiment="{{ lead_article.sentiment }}" data-category="{{ lead_article.category }}" data-search="{{ lead_article.title }} {{ lead_article.summary }} {{ lead_article.source }} {{ lead_article.insight }}">
+            <p class="eyebrow">{{ lead_article.category }}</p>
+            <h2><a href="{{ lead_article.link }}" target="_blank" rel="noopener noreferrer">{{ lead_article.title }}</a></h2>
+            <p class="lead-summary">{{ lead_article.summary }}</p>
+            <p class="lead-insight"><strong>Pulse insight</strong> {{ lead_article.insight }}</p>
+            <p class="story-meta">{{ lead_article.published_label }} — {{ lead_article.source }}</p>
+            <span class="sentiment sentiment-{{ lead_article.sentiment }}">{{ lead_article.sentiment_marker }} {{ lead_article.sentiment|capitalize }}</span>
+            <form class="inline-form" method="post" action="/brief/{{ lead_article.id }}/purchase">
+              <button class="brief-button" type="submit">{{ "Open Deep Brief" if lead_article.id in brief_article_ids else "Get Deep Brief · $1" }}</button>
+            </form>
+          </article>
+          {% else %}
+          <p class="empty-copy">Newly classified stories will appear here.</p>
+          {% endif %}
+          {% for article in articles[1:] %}
+          <article class="more-story story-card story-item" data-sentiment="{{ article.sentiment }}" data-category="{{ article.category }}" data-search="{{ article.title }} {{ article.summary }} {{ article.source }} {{ article.insight }}">
+            <p class="eyebrow">{{ article.category }}</p>
+            <h3><a href="{{ article.link }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a></h3>
+            <p class="more-summary">{{ article.summary }}</p>
+            <div class="more-story-footer">
+              <p class="story-meta">{{ article.published_label }} — {{ article.source }}</p>
+              <span class="sentiment sentiment-{{ article.sentiment }}">{{ article.sentiment_marker }} {{ article.sentiment|capitalize }}</span>
+              <form class="inline-form" method="post" action="/brief/{{ article.id }}/purchase">
+                <button class="brief-button" type="submit">{{ "Open brief" if article.id in brief_article_ids else "Deep Brief · $1" }}</button>
+              </form>
+            </div>
+          </article>
+          {% endfor %}
+        </section>
+
+        <aside class="reader-sidebar" aria-label="Reader services">
+          <section class="sidebar-card pro-card">
+            <p class="eyebrow">MarketPulse Pro</p>
+            <h2>Read the market in real time.</h2>
+            <p>Get every classified story as it breaks, plus deeper context when you need it.</p>
+            <p class="plan-price">$5 <span>/ month</span></p>
+            {% if user and user.is_pro %}
+              <p class="pro-label">PRO · {{ subscription.status if subscription else "ACTIVE" }}</p>
+              <form method="post" action="/subscribe/cancel"><button class="button button-outline" type="submit">Cancel subscription</button></form>
+            {% else %}
+              <form method="post" action="/subscribe"><button class="button button-paypal" type="submit">Subscribe with PayPal</button></form>
+              <p class="sidebar-note">Free readers see stories after 30 minutes.</p>
+            {% endif %}
+          </section>
+          <section class="sidebar-card brief-explainer">
+            <p class="eyebrow">A little more context</p>
+            <h2>Deep Brief</h2>
+            <p>Four clear sections: what happened, why it matters, who is affected, and what to watch next.</p>
+            <p class="brief-price">$1 per article · one-time PayPal payment</p>
+          </section>
+          <section class="sidebar-card your-briefs">
+            <p class="eyebrow">Your reading list</p>
+            <h2>Your briefs</h2>
+            {% if user %}
+              {% if user_briefs %}
+                <ul class="brief-list">
+                  {% for brief_article in user_briefs %}
+                  <li><a href="/brief/{{ brief_article.id }}">{{ brief_article.title }}</a></li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p>Your purchased Deep Briefs will be saved here.</p>
+              {% endif %}
+            {% else %}
+              <p><a href="/login">Sign in</a> to keep your briefings together.</p>
+            {% endif %}
+          </section>
+        </aside>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <span>MarketPulse AI · Independent market reading, not investment advice.</span>
+      <span>News links open at their original publishers.</span>
+    </footer>
+    {% if flashes %}
+    <div class="toast-stack" aria-live="polite" aria-label="Notifications">
+      {% for flash in flashes %}
+      <p class="toast toast-{{ flash.kind }}">{{ flash.message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  <script>
+    (() => {
+      const storyItems = [...document.querySelectorAll(".story-item")];
+      const lockedCards = [...document.querySelectorAll("[data-locked-card]")];
+      const search = document.querySelector("#story-search");
+      const emptyState = document.querySelector("#empty-state");
+      const loading = document.querySelector("#loading-skeleton");
+      let sentimentFilter = "all";
+
+      const applyFilters = () => {
+        const needle = (search?.value || "").trim().toLocaleLowerCase();
+        let visibleCount = 0;
+        storyItems.forEach((item) => {
+          const matchesSentiment = sentimentFilter === "all" || item.dataset.sentiment === sentimentFilter;
+          const matchesSearch = !needle || (item.dataset.search || "").toLocaleLowerCase().includes(needle);
+          const visible = matchesSentiment && matchesSearch;
+          item.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+        lockedCards.forEach((card) => {
+          card.hidden = Boolean(needle || sentimentFilter !== "all");
+        });
+        emptyState.hidden = visibleCount > 0;
+      };
+
+      document.querySelectorAll("[data-sentiment-filter]").forEach((button) => {
+        button.addEventListener("click", () => {
+          sentimentFilter = button.dataset.sentimentFilter;
+          document.querySelectorAll("[data-sentiment-filter]").forEach((chip) => {
+            const selected = chip === button;
+            chip.classList.toggle("is-selected", selected);
+            chip.setAttribute("aria-pressed", String(selected));
+          });
+          applyFilters();
+        });
+      });
+      search?.addEventListener("input", applyFilters);
+
+      const updateCountdowns = () => {
+        let shouldRefresh = false;
+        lockedCards.forEach((card) => {
+          const releaseAt = new Date(`${card.dataset.release}Z`).getTime();
+          const remaining = Math.max(0, releaseAt - Date.now());
+          if (remaining === 0) shouldRefresh = true;
+          const minutes = Math.ceil(remaining / 60000);
+          const label = card.querySelector("[data-countdown]");
+          if (label) label.textContent = minutes ? `${minutes} min` : "available now";
+        });
+        if (shouldRefresh) window.location.reload();
+      };
+      updateCountdowns();
+      if (lockedCards.length) window.setInterval(updateCountdowns, 10000);
+      applyFilters();
+      if (document.readyState === "complete") loading?.remove();
+      window.addEventListener("load", () => loading?.remove(), { once: true });
+      window.setTimeout(() => document.querySelectorAll(".toast").forEach((toast) => toast.remove()), 6000);
+    })();
+  </script>
+</body>
+</html>

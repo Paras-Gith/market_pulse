@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>{{ "Create an account" if mode == "signup" else "Sign in" }} — MarketPulse AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body class="auth-page">
+  <div class="page-shell">
+    <header class="masthead">
+      <a class="brand" href="/">MarketPulse <span>AI</span></a>
+    </header>
+    <main class="auth-card">
+      <p class="eyebrow">A clearer read on the markets</p>
+      <h1>{{ "Create your account" if mode == "signup" else "Welcome back" }}</h1>
+      {% for flash in flashes %}
+        <p class="toast toast-{{ flash.kind }}" role="status">{{ flash.message }}</p>
+      {% endfor %}
+      <form method="post" action="{{ '/signup' if mode == 'signup' else '/login' }}">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" maxlength="320" required>
+        <label for="password">Password{% if mode == "signup" %} <span class="field-note">(8–64 characters)</span>{% endif %}</label>
+        <input id="password" name="password" type="password" autocomplete="{{ 'new-password' if mode == 'signup' else 'current-password' }}" minlength="{{ 8 if mode == 'signup' else 1 }}" maxlength="64" required>
+        <button class="button button-ink" type="submit">{{ "Create account" if mode == "signup" else "Sign in" }}</button>
+      </form>
+      <p class="auth-switch">
+        {% if mode == "signup" %}Already registered? <a href="/login">Sign in</a>.
+        {% else %}New to MarketPulse? <a href="/signup">Create an account</a>.{% endif %}
+      </p>
+      <a class="back-link" href="/">← Back to the front page</a>
+    </main>
+  </div>
+</body>
+</html>

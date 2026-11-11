@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: reject-env-files
+        name: Reject staged environment files
+        entry: python scripts/check_staged_files.py
+        language: system
+        pass_filenames: false
+
+      - id: ruff-check
+        name: Ruff lint
+        entry: ruff check
+        language: system
+        types: [python]
+
+      - id: ruff-format
+        name: Ruff format
+        entry: ruff format --check
+        language: system
+        types: [python]
+
+      - id: pyright-baseline
+        name: Pyright strict type-check (no new diagnostics)
+        entry: python scripts/check_pyright.py
+        language: system
+        types: [python]
+        pass_filenames: false
