@@ -34,3 +34,6 @@ exclude = [
 pythonVersion = "3.10"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = "none"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

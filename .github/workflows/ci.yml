@@ -1,6 +1,6 @@
 name: CI
 
-on:
+"on":
   pull_request:
   push:
     branches: [main]
@@ -48,11 +48,14 @@ jobs:
           else
             base="$PUSH_BEFORE_SHA"
           fi
-          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
-            base="$(git rev-list --max-parents=0 "$HEAD_SHA")"
-            files="$(git diff-tree --no-commit-id --name-only -r "$HEAD_SHA" -- '*.py')"
-          else
+          if [[ -n "$base" && ! "$base" =~ ^0+$ ]] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
             files="$(git diff --name-only --diff-filter=ACMRT "$base" "$HEAD_SHA" -- '*.py')"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "Pull request base commit is unavailable: $base" >&2
+            exit 1
+          else
+            echo "No prior commit is available; skipping changed-file formatting on this initial push."
+            exit 0
           fi
           if [[ -n "$files" ]]; then
             while IFS= read -r file; do
@@ -66,7 +69,7 @@ jobs:
         run: python scripts/check_pyright.py
 
       - name: Run tests
-        run: pytest -q
+        run: python -m pytest -q
 
       - name: Audit dependencies
         run: pip-audit -r requirements.txt
@@ -98,4 +101,4 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Run tests
-        run: pytest -q
+        run: python -m pytest -q
